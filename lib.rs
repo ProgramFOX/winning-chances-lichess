@@ -68,11 +68,19 @@ impl Aggregatable for WDLData {
 #[derive(Debug)]
 pub enum GameResult { Win, Draw, Loss, Unknown }
 
-pub fn calculate_from_files<'a, I>(files: I) -> String
+pub fn calculate_from_files<'a, I>(files: I)
 where
     I: IntoIterator<Item = &'a str>
 {
-    String::from("ok")
+    let mut total_data = WDLData {
+        wins: Dataset::new(),
+        draws: Dataset::new(),
+        losses: Dataset::new(),
+    };
+    for path in files {
+        total_data = calculate(path).aggregate(total_data);
+    }
+    wdldata_presentation(&total_data);
 }
 
 fn calculate(file_path: &str) -> WDLData {
@@ -163,6 +171,30 @@ fn round_rating(rating: i32) -> i32 {
     let rating = rating as f32;
     ((rating * 4.0 / 100.0).round() * 100.0 / 4.0) as i32
 }
+
+fn wdldata_presentation(data: &WDLData) {
+    println!("Wins");
+    println!("----------");
+    for key in data.wins.keys() {
+        let point = data.wins.get(key).unwrap();
+        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+    }
+    println!("----------");
+    println!("Draws");
+    println!("----------");
+    for key in data.draws.keys() {
+        let point = data.draws.get(key).unwrap();
+        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+    }
+    println!("----------");
+    println!("Losses");
+    println!("----------");
+    for key in data.losses.keys() {
+        let point = data.losses.get(key).unwrap();
+        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+    }
+    println!("----------");
+} 
 
 #[cfg(test)]
 mod tests {
