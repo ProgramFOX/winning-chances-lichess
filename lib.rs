@@ -84,6 +84,8 @@ where
 }
 
 fn calculate(file_path: &str) -> WDLData {
+    let mut processed: u32 = 0;
+
     let mut wins = Dataset::new();
     let mut draws = Dataset::new();
     let mut losses = Dataset::new();
@@ -108,6 +110,11 @@ fn calculate(file_path: &str) -> WDLData {
             let tc = tc_regex.captures(line).unwrap().get(1).unwrap().as_str();
             let qualified_tc = timecontrol_qualifies(tc);
             skip = !qualified_tc;
+
+            processed += 1;
+            if processed % 100000 == 0 {
+                println!("{} processed in the current file", processed);
+            }
         }
         else if whiteelo_regex.is_match(line) {
             rating1 = round_rating(whiteelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap());
