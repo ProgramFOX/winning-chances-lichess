@@ -65,8 +65,8 @@ impl Aggregatable for WDLData {
     }
 }
 
-#[derive(Debug)]
-pub enum GameResult { Win, Draw, Loss, Unknown }
+#[derive(Debug, PartialEq)]
+pub enum GameResult { Win, Draw, Loss, Unknown, Unfinished }
 
 pub fn calculate_from_files<'a, I>(files: I)
 where
@@ -91,7 +91,7 @@ fn calculate(file_path: &str) -> WDLData {
     let tc_regex = regex::Regex::new("^\\[TimeControl \"(\\d+\\+\\d+)\"\\]$").unwrap();
     let whiteelo_regex = regex::Regex::new("^\\[WhiteElo \"(\\d+)\"\\]$").unwrap();
     let blackelo_regex = regex::Regex::new("^\\[BlackElo \"(\\d+)\"\\]$").unwrap();
-    let result_regex = regex::Regex::new("^\\[Result \"[^\"]\"\\]$").unwrap();
+    let result_regex = regex::Regex::new("^\\[Result \"([^\"]+)\"\\]$").unwrap();
 
     let file = BufReader::new(File::open(file_path).expect("One of the given files doesn't exist."));
 
@@ -121,11 +121,12 @@ fn calculate(file_path: &str) -> WDLData {
                 "1-0" => result = GameResult::Win,
                 "1/2-1/2" => result = GameResult::Draw,
                 "0-1" => result = GameResult::Loss,
-                _ => panic!("Unexpected result value {:?}", result),
+                "*" => result = GameResult::Unfinished,
+                _ => panic!("Unexpected result value {:?}", result_str),
             }
         }
 
-        if !line.starts_with("[") && !skip {
+        if !line.starts_with("[") && !skip && result != GameResult::Unfinished {
             let min_rating = cmp::min(rating1, rating2);
             let max_rating = cmp::max(rating1, rating2);
             let rating_diff = max_rating - min_rating;
