@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io::{BufReader,BufRead};
+use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::cmp;
 
@@ -45,9 +45,12 @@ impl Aggregatable for Dataset {
         for key in other.keys() {
             if !new_set.contains_key(key) {
                 new_set.insert(*key, other.get(key).unwrap().clone());
-            }
-            else {
-                *new_set.get_mut(key).unwrap() = new_set.get(key).unwrap().clone().aggregate(other.get(key).unwrap().clone());
+            } else {
+                *new_set.get_mut(key).unwrap() = new_set
+                    .get(key)
+                    .unwrap()
+                    .clone()
+                    .aggregate(other.get(key).unwrap().clone());
             }
         }
 
@@ -66,7 +69,13 @@ impl Aggregatable for WDLData {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum GameResult { Win, Draw, Loss, Unknown, Unfinished }
+pub enum GameResult {
+    Win,
+    Draw,
+    Loss,
+    Unknown,
+    Unfinished,
+}
 
 impl std::ops::Not for GameResult {
     type Output = GameResult;
@@ -75,14 +84,14 @@ impl std::ops::Not for GameResult {
         match self {
             GameResult::Win => GameResult::Loss,
             GameResult::Loss => GameResult::Win,
-            other => other
+            other => other,
         }
     }
 }
 
 pub fn calculate_from_files<'a, I>(files: I)
 where
-    I: IntoIterator<Item = &'a str>
+    I: IntoIterator<Item = &'a str>,
 {
     let mut total_data = WDLData {
         wins: Dataset::new(),
@@ -107,7 +116,8 @@ fn calculate(file_path: &str) -> WDLData {
     let blackelo_regex = regex::Regex::new("^\\[BlackElo \"(\\d+)\"\\]$").unwrap();
     let result_regex = regex::Regex::new("^\\[Result \"([^\"]+)\"\\]$").unwrap();
 
-    let file = BufReader::new(File::open(file_path).expect("One of the given files doesn't exist."));
+    let file =
+        BufReader::new(File::open(file_path).expect("One of the given files doesn't exist."));
 
     let mut skip = false;
     let mut rating1 = 0;
@@ -127,15 +137,31 @@ fn calculate(file_path: &str) -> WDLData {
             if processed % 100000 == 0 {
                 println!("{} processed in the current file", processed);
             }
-        }
-        else if whiteelo_regex.is_match(line) {
-            rating1 = whiteelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap();
-        }
-        else if blackelo_regex.is_match(line) {
-            rating2 = blackelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap();
-        }
-        else if result_regex.is_match(line) {
-            let result_str = result_regex.captures(line).unwrap().get(1).unwrap().as_str();
+        } else if whiteelo_regex.is_match(line) {
+            rating1 = whiteelo_regex
+                .captures(line)
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .as_str()
+                .parse()
+                .unwrap();
+        } else if blackelo_regex.is_match(line) {
+            rating2 = blackelo_regex
+                .captures(line)
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .as_str()
+                .parse()
+                .unwrap();
+        } else if result_regex.is_match(line) {
+            let result_str = result_regex
+                .captures(line)
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .as_str();
             match result_str {
                 "1-0" => result_white_pov = GameResult::Win,
                 "1/2-1/2" => result_white_pov = GameResult::Draw,
@@ -145,7 +171,9 @@ fn calculate(file_path: &str) -> WDLData {
             }
         }
 
-        if !line.starts_with("[") && !skip && result_white_pov != GameResult::Unfinished && rating1 != rating2 {
+        if !line.starts_with("[") && !skip && result_white_pov != GameResult::Unfinished
+            && rating1 != rating2
+        {
             let min_rating = cmp::min(rating1, rating2);
             let max_rating = cmp::max(rating1, rating2);
             let rating_diff = round_rating(max_rating) - round_rating(min_rating);
@@ -159,15 +187,15 @@ fn calculate(file_path: &str) -> WDLData {
             };
 
             if !wins.contains_key(&rating_diff) {
-                wins.insert(rating_diff, Datapoint {value: 0, total: 0 });
+                wins.insert(rating_diff, Datapoint { value: 0, total: 0 });
             }
             wins.get_mut(&rating_diff).unwrap().total += 1;
             if !draws.contains_key(&rating_diff) {
-                draws.insert(rating_diff, Datapoint {value: 0, total: 0 });
+                draws.insert(rating_diff, Datapoint { value: 0, total: 0 });
             }
             draws.get_mut(&rating_diff).unwrap().total += 1;
             if !losses.contains_key(&rating_diff) {
-                losses.insert(rating_diff, Datapoint {value: 0, total: 0 });
+                losses.insert(rating_diff, Datapoint { value: 0, total: 0 });
             }
             losses.get_mut(&rating_diff).unwrap().total += 1;
 
@@ -175,14 +203,18 @@ fn calculate(file_path: &str) -> WDLData {
                 GameResult::Win => &mut wins,
                 GameResult::Draw => &mut draws,
                 GameResult::Loss => &mut losses,
-                _ => panic!("result = Unknown")
+                _ => panic!("result = Unknown"),
             };
             relevant_set.get_mut(&rating_diff).unwrap().value += 1;
             skip = true;
         }
     }
 
-    WDLData { wins, draws, losses }
+    WDLData {
+        wins,
+        draws,
+        losses,
+    }
 }
 
 fn timecontrol_qualifies(timecontrol: &str) -> bool {
@@ -206,7 +238,16 @@ fn wdldata_presentation(data: &WDLData) {
     let mut win_strings: Vec<(i32, String)> = vec![];
     for key in data.wins.keys() {
         let point = data.wins.get(key).unwrap();
-        win_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
+        win_strings.push((
+            *key,
+            format!(
+                "+{}: {} ({}/{})",
+                *key,
+                point.percentage_value(),
+                point.value,
+                point.total
+            ),
+        ));
     }
     win_strings.sort_by(|a, b| a.0.cmp(&b.0));
     for s in win_strings {
@@ -218,7 +259,16 @@ fn wdldata_presentation(data: &WDLData) {
     let mut draw_strings: Vec<(i32, String)> = vec![];
     for key in data.draws.keys() {
         let point = data.draws.get(key).unwrap();
-        draw_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
+        draw_strings.push((
+            *key,
+            format!(
+                "+{}: {} ({}/{})",
+                *key,
+                point.percentage_value(),
+                point.value,
+                point.total
+            ),
+        ));
     }
     draw_strings.sort_by(|a, b| a.0.cmp(&b.0));
     for s in draw_strings {
@@ -230,14 +280,23 @@ fn wdldata_presentation(data: &WDLData) {
     let mut loss_strings: Vec<(i32, String)> = vec![];
     for key in data.losses.keys() {
         let point = data.losses.get(key).unwrap();
-        loss_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
+        loss_strings.push((
+            *key,
+            format!(
+                "+{}: {} ({}/{})",
+                *key,
+                point.percentage_value(),
+                point.value,
+                point.total
+            ),
+        ));
     }
     loss_strings.sort_by(|a, b| a.0.cmp(&b.0));
     for s in loss_strings {
         println!("{}", s.1);
     }
     println!("----------");
-} 
+}
 
 #[cfg(test)]
 mod tests {
