@@ -7,6 +7,12 @@ pub struct Datapoint {
     pub total: u32,
 }
 
+pub struct WDLData {
+    pub wins: Dataset,
+    pub draws: Dataset,
+    pub losses: Dataset,
+} 
+
 impl Datapoint {
     pub fn percentage_value(&self) -> f64 {
         (self.value as f64) / (self.total as f64)
