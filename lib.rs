@@ -65,8 +65,20 @@ impl Aggregatable for WDLData {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum GameResult { Win, Draw, Loss, Unknown, Unfinished }
+
+impl std::ops::Not for GameResult {
+    type Output = GameResult;
+
+    fn not(self) -> GameResult {
+        match self {
+            GameResult::Win => GameResult::Loss,
+            GameResult::Loss => GameResult::Win,
+            other => other
+        }
+    }
+}
 
 pub fn calculate_from_files<'a, I>(files: I)
 where
@@ -100,7 +112,7 @@ fn calculate(file_path: &str) -> WDLData {
     let mut skip = false;
     let mut rating1 = 0;
     let mut rating2 = 0;
-    let mut result = GameResult::Unknown;
+    let mut result_white_pov = GameResult::Unknown;
 
     for l in file.lines() {
         let line = l.unwrap();
@@ -125,18 +137,26 @@ fn calculate(file_path: &str) -> WDLData {
         else if result_regex.is_match(line) {
             let result_str = result_regex.captures(line).unwrap().get(1).unwrap().as_str();
             match result_str {
-                "1-0" => result = GameResult::Win,
-                "1/2-1/2" => result = GameResult::Draw,
-                "0-1" => result = GameResult::Loss,
-                "*" => result = GameResult::Unfinished,
+                "1-0" => result_white_pov = GameResult::Win,
+                "1/2-1/2" => result_white_pov = GameResult::Draw,
+                "0-1" => result_white_pov = GameResult::Loss,
+                "*" => result_white_pov = GameResult::Unfinished,
                 _ => panic!("Unexpected result value {:?}", result_str),
             }
         }
 
-        if !line.starts_with("[") && !skip && result != GameResult::Unfinished {
+        if !line.starts_with("[") && !skip && result_white_pov != GameResult::Unfinished && rating1 != rating2 {
             let min_rating = cmp::min(rating1, rating2);
             let max_rating = cmp::max(rating1, rating2);
             let rating_diff = max_rating - min_rating;
+
+            let result_lowest_pov = if min_rating == rating1 {
+                // White is the lowest rated player.
+                result_white_pov
+            } else {
+                // Black is the lowest rated player.
+                !result_white_pov
+            };
 
             if !wins.contains_key(&rating_diff) {
                 wins.insert(rating_diff, Datapoint {value: 0, total: 0 });
@@ -151,7 +171,7 @@ fn calculate(file_path: &str) -> WDLData {
             }
             losses.get_mut(&rating_diff).unwrap().total += 1;
 
-            let mut relevant_set = match result {
+            let mut relevant_set = match result_lowest_pov {
                 GameResult::Win => &mut wins,
                 GameResult::Draw => &mut draws,
                 GameResult::Loss => &mut losses,
