@@ -203,24 +203,39 @@ fn round_rating(rating: i32) -> i32 {
 fn wdldata_presentation(data: &WDLData) {
     println!("Wins");
     println!("----------");
+    let mut win_strings: Vec<(i32, String)> = vec![];
     for key in data.wins.keys() {
         let point = data.wins.get(key).unwrap();
-        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+        win_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
+    }
+    win_strings.sort_by(|a, b| a.0.cmp(&b.0));
+    for s in win_strings {
+        println!("{}", s.1);
     }
     println!("----------");
     println!("Draws");
     println!("----------");
+    let mut draw_strings: Vec<(i32, String)> = vec![];
     for key in data.draws.keys() {
         let point = data.draws.get(key).unwrap();
-        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+        draw_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
+    }
+    draw_strings.sort_by(|a, b| a.0.cmp(&b.0));
+    for s in draw_strings {
+        println!("{}", s.1);
     }
     println!("----------");
     println!("Losses");
     println!("----------");
+    let mut loss_strings: Vec<(i32, String)> = vec![];
     for key in data.losses.keys() {
         let point = data.losses.get(key).unwrap();
-        println!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total);
+        loss_strings.push((*key, format!("+{}: {} ({}/{})", *key, point.percentage_value(), point.value, point.total)));
     }
+    loss_strings.sort_by(|a, b| a.0.cmp(&b.0));
+    for s in loss_strings {
+        println!("{}", s.1);
+    }}
     println!("----------");
 } 
 
