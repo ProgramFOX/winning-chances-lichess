@@ -5,6 +5,10 @@ authors = ["ProgramFOX <programfox@hotmail.be>"]
 
 [dependencies]
 
+[lib]
+name = "winning_chances_core"
+path = "lib.rs"
+
 [[bin]]
 name = "winning-chances"
 path = "main.rs"
