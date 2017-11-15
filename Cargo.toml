@@ -1,0 +1,10 @@
+[package]
+name = "winning-chances"
+version = "0.1.0"
+authors = ["ProgramFOX <programfox@hotmail.be>"]
+
+[dependencies]
+
+[[bin]]
+name = "winning-chances"
+path = "main.rs"
