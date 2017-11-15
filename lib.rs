@@ -5,8 +5,13 @@ use std::cmp;
 
 extern crate regex;
 
+trait Aggregatable {
+    fn aggregate(self, other: Self) -> Self;
+}
+
 pub type Dataset = HashMap<i32, Datapoint>;
 
+#[derive(Clone)]
 pub struct Datapoint {
     pub value: u32,
     pub total: u32,
@@ -21,6 +26,42 @@ pub struct WDLData {
 impl Datapoint {
     pub fn percentage_value(&self) -> f64 {
         (self.value as f64) / (self.total as f64)
+    }
+}
+
+impl Aggregatable for Datapoint {
+    fn aggregate(self, other: Datapoint) -> Datapoint {
+        Datapoint {
+            value: self.value + other.value,
+            total: self.total + other.total,
+        }
+    }
+}
+
+impl Aggregatable for Dataset {
+    fn aggregate(self, other: Dataset) -> Dataset {
+        let mut new_set = self.clone();
+
+        for key in other.keys() {
+            if !new_set.contains_key(key) {
+                new_set.insert(*key, other.get(key).unwrap().clone());
+            }
+            else {
+                *new_set.get_mut(key).unwrap() = new_set.get(key).unwrap().clone().aggregate(other.get(key).unwrap().clone());
+            }
+        }
+
+        new_set
+    }
+}
+
+impl Aggregatable for WDLData {
+    fn aggregate(self, other: WDLData) -> WDLData {
+        WDLData {
+            wins: self.wins.aggregate(other.wins),
+            draws: self.draws.aggregate(other.draws),
+            losses: self.losses.aggregate(other.losses),
+        }
     }
 }
 
