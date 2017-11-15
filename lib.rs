@@ -146,11 +146,9 @@ fn calculate(file_path: &str) -> WDLData {
         }
 
         if !line.starts_with("[") && !skip && result_white_pov != GameResult::Unfinished && rating1 != rating2 {
-            let rating1 = round_rating(rating1);
-            let rating2 = round_rating(rating2);
             let min_rating = cmp::min(rating1, rating2);
             let max_rating = cmp::max(rating1, rating2);
-            let rating_diff = max_rating - min_rating;
+            let rating_diff = round_rating(max_rating) - round_rating(min_rating);
 
             let result_lowest_pov = if min_rating == rating1 {
                 // White is the lowest rated player.
