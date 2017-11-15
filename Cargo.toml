@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["ProgramFOX <programfox@hotmail.be>"]
 
 [dependencies]
+regex = "0.2"
 
 [lib]
 name = "winning_chances_core"

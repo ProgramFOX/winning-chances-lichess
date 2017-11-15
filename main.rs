@@ -1,6 +1,7 @@
 use std::io;
 
 extern crate winning_chances_core;
+extern crate regex;
 
 use winning_chances_core::calculate_from_files;
 
