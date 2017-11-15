@@ -235,7 +235,7 @@ fn wdldata_presentation(data: &WDLData) {
     loss_strings.sort_by(|a, b| a.0.cmp(&b.0));
     for s in loss_strings {
         println!("{}", s.1);
-    }}
+    }
     println!("----------");
 } 
 
