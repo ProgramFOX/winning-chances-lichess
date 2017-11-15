@@ -129,10 +129,10 @@ fn calculate(file_path: &str) -> WDLData {
             }
         }
         else if whiteelo_regex.is_match(line) {
-            rating1 = round_rating(whiteelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap());
+            rating1 = whiteelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap();
         }
         else if blackelo_regex.is_match(line) {
-            rating2 = round_rating(blackelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap());
+            rating2 = blackelo_regex.captures(line).unwrap().get(1).unwrap().as_str().parse().unwrap();
         }
         else if result_regex.is_match(line) {
             let result_str = result_regex.captures(line).unwrap().get(1).unwrap().as_str();
@@ -146,6 +146,8 @@ fn calculate(file_path: &str) -> WDLData {
         }
 
         if !line.starts_with("[") && !skip && result_white_pov != GameResult::Unfinished && rating1 != rating2 {
+            let rating1 = round_rating(rating1);
+            let rating2 = round_rating(rating2);
             let min_rating = cmp::min(rating1, rating2);
             let max_rating = cmp::max(rating1, rating2);
             let rating_diff = max_rating - min_rating;
