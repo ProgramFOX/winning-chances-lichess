@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["ProgramFOX <programfox@hotmail.be>"]
 
 [dependencies]
-regex = "0.2"
 time = "0.1"
 
 [lib]

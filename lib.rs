@@ -3,8 +3,6 @@ use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::cmp;
 
-extern crate regex;
-
 trait Aggregatable {
     fn aggregate(self, other: Self) -> Self;
 }
@@ -111,11 +109,6 @@ fn calculate(file_path: &str) -> WDLData {
     let mut draws = Dataset::new();
     let mut losses = Dataset::new();
 
-    let tc_regex = regex::Regex::new("^\\[TimeControl \"(\\d+\\+\\d+)\"\\]$").unwrap();
-    let whiteelo_regex = regex::Regex::new("^\\[WhiteElo \"(\\d+)\"\\]$").unwrap();
-    let blackelo_regex = regex::Regex::new("^\\[BlackElo \"(\\d+)\"\\]$").unwrap();
-    let result_regex = regex::Regex::new("^\\[Result \"([^\"]+)\"\\]$").unwrap();
-
     let file =
         BufReader::new(File::open(file_path).expect("One of the given files doesn't exist."));
 
@@ -126,10 +119,9 @@ fn calculate(file_path: &str) -> WDLData {
 
     for l in file.lines() {
         let line = l.unwrap();
-        let line = line.trim();
 
-        if tc_regex.is_match(line) {
-            let tc = tc_regex.captures(line).unwrap().get(1).unwrap().as_str();
+        if line.starts_with("[TimeControl") {
+            let tc = line.split("\"").nth(1).unwrap();
             let qualified_tc = timecontrol_qualifies(tc);
             skip = !qualified_tc;
 
@@ -137,31 +129,12 @@ fn calculate(file_path: &str) -> WDLData {
             if processed % 100000 == 0 {
                 println!("{} processed in the current file", processed);
             }
-        } else if whiteelo_regex.is_match(line) {
-            rating1 = whiteelo_regex
-                .captures(line)
-                .unwrap()
-                .get(1)
-                .unwrap()
-                .as_str()
-                .parse()
-                .unwrap();
-        } else if blackelo_regex.is_match(line) {
-            rating2 = blackelo_regex
-                .captures(line)
-                .unwrap()
-                .get(1)
-                .unwrap()
-                .as_str()
-                .parse()
-                .unwrap();
-        } else if result_regex.is_match(line) {
-            let result_str = result_regex
-                .captures(line)
-                .unwrap()
-                .get(1)
-                .unwrap()
-                .as_str();
+        } else if line.starts_with("[WhiteElo") {
+            rating1 = line.split("\"").nth(1).unwrap().parse().unwrap();
+        } else if line.starts_with("[BlackElo") {
+            rating2 = line.split("\"").nth(1).unwrap().parse().unwrap();
+        } else if line.starts_with("[Result") {
+            let result_str = line.split("\"").nth(1).unwrap();
             match result_str {
                 "1-0" => result_white_pov = GameResult::Win,
                 "1/2-1/2" => result_white_pov = GameResult::Draw,
@@ -218,6 +191,10 @@ fn calculate(file_path: &str) -> WDLData {
 }
 
 fn timecontrol_qualifies(timecontrol: &str) -> bool {
+    if !timecontrol.contains("+") {
+        return false;
+    }
+
     let mut parts = timecontrol.split("+");
 
     let initial: i32 = parts.next().unwrap().parse().unwrap();

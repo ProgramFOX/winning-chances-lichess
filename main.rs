@@ -1,7 +1,7 @@
 use std::io;
 
-extern crate winning_chances_core;
 extern crate time;
+extern crate winning_chances_core;
 
 use winning_chances_core::calculate_from_files;
 
